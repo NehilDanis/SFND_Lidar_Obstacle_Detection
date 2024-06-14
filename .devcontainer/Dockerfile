@@ -15,7 +15,15 @@ RUN set -ex                                                            &&\
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 100 &&\
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 100
 
-# install pcl 
-RUN set -ex                        &&\
-    apt-get update                 &&\
-    apt-get  install -y libpcl-dev
+# Install pcl
+RUN apt-get update \
+    && apt-get install -y \
+        libpcl-dev \
+        cmake \
+        build-essential \
+        valgrind \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Reset DEBIAN_FRONTEND variable to its default value
+ENV DEBIAN_FRONTEND=
