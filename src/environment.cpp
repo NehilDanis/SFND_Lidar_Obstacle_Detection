@@ -95,6 +95,6 @@ int main (int argc, char** argv)
 
     while (!viewer->wasStopped ())
     {
-        viewer->spinOnce ();
+        viewer->spinOnce(5000);
     } 
 }
