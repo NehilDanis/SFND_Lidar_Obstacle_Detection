@@ -21,9 +21,18 @@ RUN apt-get update \
         libpcl-dev \
         cmake \
         build-essential \
-        valgrind \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+        valgrind
+
+# install X-11 apps
+RUN apt-get update \
+    && apt-get install -y x11-apps
+
+# install git
+RUN apt-get update \
+    && apt-get install -y git
 
 # Reset DEBIAN_FRONTEND variable to its default value
 ENV DEBIAN_FRONTEND=
+
+# set the display environment variable
+ENV DISPLAY=127.0.0.1:0
