@@ -150,3 +150,15 @@ If you get build errors related to Qt5, make sure that the path for Qt5 is corre
 [PCL Source Github](https://github.com/PointCloudLibrary/pcl)
 
 [PCL Mac Compilation Docs](https://pcl.readthedocs.io/projects/tutorials/en/latest/compiling_pcl_macosx.html#compiling-pcl-macosx)
+
+#### Personal notes
+
+* Using mac if you dont want to install PCL using brew, I had few ideas using Docker but then it was problematic since MacOS does not have X11. It worked with the devcontainer provided but still might be slow.
+
+* Then I also tried with conan, but then VTK does not have a conan package so it is easy to get PCL using conan but it then will not have visualization plugin.(#TODO to myself, create a vtk recipe for conan center.) This is the pcl 1.15 for mac https://github.com/NehilDanis/conan-center-index/tree/package-add-pcl-1.15
+
+* In the end I only used 
+```bash
+brew install vtk
+brew install pcl
+```
