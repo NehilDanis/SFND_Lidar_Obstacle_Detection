@@ -57,7 +57,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     
     // TODO:: Create point processor
     ProcessPointClouds<pcl::PointXYZ> pc_processor;
-    auto segmented_cloud = pc_processor.SegmentPlane(points, 100, 0.2);
+    auto segmented_cloud = pc_processor.SegmentPlane(points, 100, 0.1);
     renderPointCloud(viewer, segmented_cloud.first, "obstacles", Color(1, 0, 0));
     renderPointCloud(viewer, segmented_cloud.second, "road", Color(0, 1, 0));
   

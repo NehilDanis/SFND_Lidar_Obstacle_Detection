@@ -7,6 +7,8 @@
 // using templates for processPointClouds so also include .cpp to help linker
 #include "../../processPointClouds.cpp"
 
+#include <cmath>
+
 pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData()
 {
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
@@ -66,17 +68,49 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
 	std::unordered_set<int> inliersResult;
 	srand(time(NULL));
 	
-	// TODO: Fill in this function
-
+	size_t max_num_inliers = 0;
 	// For max iterations 
+	while(maxIterations--) {
+		std::unordered_set<int> inliers;
+		// Randomly sample subset
+		while(inliers.size() < 2) {
+			inliers.insert(rand() % cloud->points.size());
+		}
 
-	// Randomly sample subset and fit line
+		// fit a line
+		// ax + by + c = 0
+		// n = (a, b) 
+
+		auto itr = inliers.begin();
+		auto x1 = cloud->points[*itr].x;
+		auto y1 = cloud->points[*itr].y;
+		itr++;
+		auto x2 = cloud->points[*itr].x;
+		auto y2 = cloud->points[*itr].y;
+
+		auto a = (y1 - y2);
+		auto b = (x2 - x1);
+		auto c = (x1*y2 - x2*y1); 
+
+		for(size_t idx = 0; idx < cloud->points.size(); idx++) {
+			const auto& point = cloud->points[idx];
+			auto distace = std::abs(a * point.x + b * point.y + c) / std::sqrt(std::pow(a, 2) + std::pow(b, 2));
+			if(distace < distanceTol) {
+				inliers.insert(idx);
+			}
+		}
+		
+		if(inliers.size() > max_num_inliers) {
+			max_num_inliers = inliers.size();
+			inliersResult.clear();
+			inliersResult = inliers;
+		}
+	}
 
 	// Measure distance between every point and fitted line
 	// If distance is smaller than threshold count it as inlier
 
 	// Return indicies of inliers from fitted line with most inliers
-	
 	return inliersResult;
 
 }
@@ -92,7 +126,7 @@ int main ()
 	
 
 	// TODO: Change the max iteration and distance tolerance arguments for Ransac function
-	std::unordered_set<int> inliers = Ransac(cloud, 0, 0);
+	std::unordered_set<int> inliers = Ransac(cloud, 50, 0.5);
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr  cloudInliers(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOutliers(new pcl::PointCloud<pcl::PointXYZ>());
