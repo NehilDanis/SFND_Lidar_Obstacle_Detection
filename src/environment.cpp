@@ -10,6 +10,9 @@
 
 #include <memory>
 
+#include <algorithm>
+#include <ranges>
+
 std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer::Ptr& viewer)
 {
 
@@ -57,10 +60,20 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     
     // TODO:: Create point processor
     ProcessPointClouds<pcl::PointXYZ> pc_processor;
-    auto segmented_cloud = pc_processor.SegmentPlane(points, 100, 0.1);
-    renderPointCloud(viewer, segmented_cloud.first, "obstacles", Color(1, 0, 0));
-    renderPointCloud(viewer, segmented_cloud.second, "road", Color(0, 1, 0));
-  
+    auto segmented_cloud = pc_processor.SegmentPlane(points, 100, 0.2);
+    // renderPointCloud(viewer, segmented_cloud.first, "obstacles", Color(1, 0, 0));
+    renderPointCloud(viewer, segmented_cloud.second, "road", Color(1, 1, 0));
+
+    // cluster all the obstacles
+    auto clusters = pc_processor.Clustering(segmented_cloud.first, 1.5, 3, 30);
+    std::array<Color, 3> colors {Color(1, 0, 0), Color(0, 1, 0), Color(0, 0, 1)};
+
+    auto cluster_index_view = std::views::iota(0U, clusters.size());
+    std::ranges::for_each(cluster_index_view, [&](auto i){
+        auto color_idx = i % colors.size(); // in case more than 3 clusters 
+        // detected some clusters should have same colors. Implemented this way since it is easy
+        renderPointCloud(viewer, clusters[i], "Cluster_" + std::to_string(i), colors[color_idx]);
+    });
 }
 
 

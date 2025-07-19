@@ -1,7 +1,8 @@
 // PCL lib Functions for processing point clouds 
 
 #include "processPointClouds.h"
-
+#include <algorithm>
+#include <ranges>
 
 //constructor:
 template<typename PointT>
@@ -85,8 +86,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
-    return segResult;
+    return SeparateClouds(inliers,cloud);
 }
 
 
@@ -97,9 +97,32 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     // Time clustering process
     auto startTime = std::chrono::steady_clock::now();
 
+    // create a KD tree for the search method
+    typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
+    tree->setInputCloud(cloud);
+
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
 
-    // TODO:: Fill in the function to perform euclidean clustering to group detected obstacles
+    std::vector<pcl::PointIndices> clusterIndices;
+
+    pcl::EuclideanClusterExtraction<PointT> ec;
+    ec.setClusterTolerance(clusterTolerance);
+    ec.setMinClusterSize(minSize);
+    ec.setMaxClusterSize(maxSize);
+    ec.setSearchMethod(tree);
+    ec.setInputCloud(cloud);
+    ec.extract(clusterIndices);
+
+    std::ranges::for_each(clusterIndices, [&](const auto& indices){
+        typename pcl::PointCloud<PointT>::Ptr cluster{new pcl::PointCloud<PointT>};
+        std::ranges::for_each(indices.indices, [&](const auto& pt_idx){
+            cluster->points.emplace_back(cloud->points[pt_idx]);
+        });
+        cluster->width = indices.indices.size();
+        cluster->height = 1;
+        cluster->is_dense = true;
+        clusters.emplace_back(cluster);
+    });
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
