@@ -44,10 +44,10 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr CreateData(std::vector<std::vector<float>> p
 }
 
 
-void render2DTree(Node* node, pcl::visualization::PCLVisualizer::Ptr& viewer, Box window, int& iteration, uint depth=0)
+void render2DTree(const std::unique_ptr<Node>& node, pcl::visualization::PCLVisualizer::Ptr& viewer, Box window, int& iteration, uint depth=0)
 {
 
-	if(node!=NULL)
+	if(node)
 	{
 		Box upperWindow = window;
 		Box lowerWindow = window;
