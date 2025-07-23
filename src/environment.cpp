@@ -73,6 +73,8 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
         auto color_idx = i % colors.size(); // in case more than 3 clusters 
         // detected some clusters should have same colors. Implemented this way since it is easy
         renderPointCloud(viewer, clusters[i], "Cluster_" + std::to_string(i), colors[color_idx]);
+        Box box = pc_processor.BoundingBox(clusters[i]);
+        renderBox(viewer, box, i);
     });
 }
 
