@@ -6,12 +6,9 @@
 #include <chrono>
 #include <string>
 #include "kdtree.h"
-#include <range/v3/view/iota.hpp>
-#include <range/v3/algorithm/for_each.hpp>
+#include <ranges>
 #include <unordered_map>
 
-namespace rg = ranges;
-namespace rv = rg::views;
 
 // Arguments:
 // window is the region to draw box around
@@ -105,9 +102,9 @@ std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<flo
 
 	std::vector<std::vector<int>> clusters;
 	std::vector<bool> is_processed(points.size(), false);
-	auto indices_view = ranges::views::iota(0U, points.size());
+	auto indices_view = std::views::iota(0U, points.size());
 
-	rg::for_each(indices_view, [&](size_t idx){
+	std::ranges::for_each(indices_view, [&](size_t idx){
 		if(not is_processed.at(idx)) {
 			std::vector<int> cluster{};
 			proximity(idx, points, tree, distanceTol, cluster, is_processed);
