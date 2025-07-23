@@ -6,6 +6,12 @@
 #include <chrono>
 #include <string>
 #include "kdtree.h"
+#include <range/v3/view/iota.hpp>
+#include <range/v3/algorithm/for_each.hpp>
+#include <unordered_map>
+
+namespace rg = ranges;
+namespace rv = rg::views;
 
 // Arguments:
 // window is the region to draw box around
@@ -75,12 +81,40 @@ void render2DTree(const std::unique_ptr<Node>& node, pcl::visualization::PCLVisu
 
 }
 
-std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, KdTree* tree, float distanceTol)
+auto proximity(size_t curr_idx, const std::vector<std::vector<float>>& points, const std::unique_ptr<KdTree>& tree, float distanceTol, std::vector<int>& cluster, std::vector<bool>& is_processed) -> void {
+	is_processed.at(curr_idx) = true;
+	cluster.emplace_back(curr_idx);
+
+	const auto& point = points.at(curr_idx);
+
+	// use kd search and get all the nearest points
+	const auto& nearest_indices = tree->search(point, distanceTol);
+	// then for each unprocessed point call the proximity
+	for(const auto& idx : nearest_indices) {
+		if(not is_processed.at(idx)) {
+			proximity(static_cast<size_t>(idx), points, tree, distanceTol, cluster, is_processed);
+		}
+	}
+
+}
+
+std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<float>>& points, const std::unique_ptr<KdTree>& tree, float distanceTol)
 {
 
 	// TODO: Fill out this function to return list of indices for each cluster
 
 	std::vector<std::vector<int>> clusters;
+	std::vector<bool> is_processed(points.size(), false);
+	auto indices_view = ranges::views::iota(0U, points.size());
+
+	rg::for_each(indices_view, [&](size_t idx){
+		if(not is_processed.at(idx)) {
+			std::vector<int> cluster{};
+			proximity(idx, points, tree, distanceTol, cluster, is_processed);
+			clusters.emplace_back(cluster);
+		}
+	});
+	
  
 	return clusters;
 
@@ -104,7 +138,7 @@ int main ()
 	//std::vector<std::vector<float>> points = { {-6.2,7}, {-6.3,8.4}, {-5.2,7.1}, {-5.7,6.3} };
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData(points);
 
-	KdTree* tree = new KdTree;
+	std::unique_ptr<KdTree> tree{new KdTree};
   
     for (int i=0; i<points.size(); i++) 
     	tree->insert(points[i], i); 
