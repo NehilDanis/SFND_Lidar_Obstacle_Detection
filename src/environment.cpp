@@ -8,8 +8,8 @@
 // using templates for processPointClouds so also include .cpp to help linker
 #include "processPointClouds.cpp"
 
-#include <memory>
 
+#include <memory>
 #include <algorithm>
 #include <ranges>
 
@@ -37,6 +37,19 @@ std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer
     }
 
     return cars;
+}
+
+void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer) {
+
+    std::unique_ptr<ProcessPointClouds<pcl::PointXYZI>> pc{new ProcessPointClouds<pcl::PointXYZI>};
+    auto cloud = pc->loadPcd("/Users/nehildanis/Projects/sensorFusion/SFND_Lidar_Obstacle_Detection/src/sensors/data/pcd/data_1/0000000000.pcd");
+
+    constexpr float filter_resolution = 0.2;
+    const Eigen::Vector4f min_point{-20, -10, -5, 0.0};
+    const Eigen::Vector4f max_point{20, 10, 5, 0.0};
+    pc->FilterCloud(cloud, filter_resolution, min_point, max_point);
+    renderPointCloud(viewer, cloud, "input_cloud");
+
 }
 
 
@@ -110,7 +123,9 @@ int main (int argc, char** argv)
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     CameraAngle setAngle = XY;
     initCamera(setAngle, viewer);
-    simpleHighway(viewer);
+    // simpleHighway(viewer);
+
+    cityBlock(viewer);
 
     while (!viewer->wasStopped ())
     {
