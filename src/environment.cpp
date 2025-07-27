@@ -39,21 +39,18 @@ std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer
     return cars;
 }
 
-void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer) {
-
-    std::unique_ptr<ProcessPointClouds<pcl::PointXYZI>> pc{new ProcessPointClouds<pcl::PointXYZI>};
-    auto cloud = pc->loadPcd("/Users/nehildanis/Projects/sensorFusion/SFND_Lidar_Obstacle_Detection/src/sensors/data/pcd/data_1/0000000000.pcd");
-
+void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer, const std::unique_ptr<ProcessPointClouds<pcl::PointXYZI>>& point_processor, const pcl::PointCloud<pcl::PointXYZI>::Ptr& cloud) 
+{
     constexpr float filter_resolution = 0.2;
     const Eigen::Vector4f min_point{-20, -6, -2, 0.0};
     const Eigen::Vector4f max_point{20, 6, 5, 0.0};
-    pc->FilterCloud(cloud, filter_resolution, min_point, max_point);
+    auto filtered_cloud = point_processor->FilterCloud(cloud, filter_resolution, min_point, max_point);
 
-    auto cloud_pair = pc->SegmentPlane(cloud, 100, 0.2);
+    auto cloud_pair = point_processor->SegmentPlane(filtered_cloud, 100, 0.2);
 
     renderPointCloud(viewer, cloud_pair.second, "road", Color{0, 1, 0});
 
-    auto clusters = pc->Clustering(cloud_pair.first, 0.5, 5, 500);
+    auto clusters = point_processor->Clustering(cloud_pair.first, 0.5, 5, 500);
 
     std::array<Color, 3> colors {Color(1, 1, 0), Color(0, 1, 1), Color(1, 0, 1)};
 
@@ -62,7 +59,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer) {
         auto color_idx = i % colors.size(); // in case more than 3 clusters 
         // detected some clusters should have same colors. Implemented this way since it is easy
         renderPointCloud(viewer, clusters[i], "Cluster_" + std::to_string(i), colors[color_idx]);
-        Box box = pc->BoundingBox(clusters[i]);
+        Box box = point_processor->BoundingBox(clusters[i]);
         renderBox(viewer, box, i);
     });
 }
@@ -138,12 +135,28 @@ int main (int argc, char** argv)
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     CameraAngle setAngle = XY;
     initCamera(setAngle, viewer);
-    // simpleHighway(viewer);
 
-    cityBlock(viewer);
+    std::unique_ptr<ProcessPointClouds<pcl::PointXYZI>> point_processor {new ProcessPointClouds<pcl::PointXYZI>};
+    std::vector<std::filesystem::path> stream = point_processor->streamPcd("/Users/nehildanis/Projects/sensorFusion/SFND_Lidar_Obstacle_Detection/src/sensors/data/pcd/data_1");
+    auto streamIterator = stream.begin();
+    pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloudI;
+    // simpleHighway(viewer);
 
     while (!viewer->wasStopped ())
     {
-        viewer->spinOnce(5000);
-    } 
+
+        // Clear viewer
+        viewer->removeAllPointClouds();
+        viewer->removeAllShapes();
+
+        // Load pcd and run obstacle detection process
+        inputCloudI = point_processor->loadPcd((*streamIterator).string());
+        cityBlock(viewer, point_processor, inputCloudI);
+            
+        streamIterator++;
+        if(streamIterator == stream.end()) {
+            streamIterator = stream.begin();
+        }
+        viewer->spinOnce ();
+    }
 }
