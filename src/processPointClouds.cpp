@@ -6,6 +6,7 @@
 
 #include "pointUtils.h"
 #include "ransac.hpp"
+#include "kdtree.hpp"
 
 //constructor:
 template<typename PointT>
@@ -200,27 +201,22 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     auto startTime = std::chrono::steady_clock::now();
 
     // create a KD tree for the search method
-    typename pcl::search::KdTree<PointT>::Ptr tree(new pcl::search::KdTree<PointT>);
-    tree->setInputCloud(cloud);
 
+    std::unique_ptr<utils::KdTree<PointT>> tree{new utils::KdTree<PointT>};
+    size_t point_id{0};
+    for(const auto& point : cloud->points) {
+        tree->insert(point, point_id++);
+    }
+    
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
-
-    std::vector<pcl::PointIndices> clusterIndices;
-
-    pcl::EuclideanClusterExtraction<PointT> ec;
-    ec.setClusterTolerance(clusterTolerance);
-    ec.setMinClusterSize(minSize);
-    ec.setMaxClusterSize(maxSize);
-    ec.setSearchMethod(tree);
-    ec.setInputCloud(cloud);
-    ec.extract(clusterIndices);
+    const auto& clusterIndices = utils::euclideanCluster(cloud, tree, clusterTolerance);
 
     std::ranges::for_each(clusterIndices, [&](const auto& indices){
         typename pcl::PointCloud<PointT>::Ptr cluster{new pcl::PointCloud<PointT>};
-        std::ranges::for_each(indices.indices, [&](const auto& pt_idx){
+        std::ranges::for_each(indices, [&](const auto& pt_idx){
             cluster->points.emplace_back(cloud->points[pt_idx]);
         });
-        cluster->width = indices.indices.size();
+        cluster->width = indices.size();
         cluster->height = 1;
         cluster->is_dense = true;
         clusters.emplace_back(cluster);

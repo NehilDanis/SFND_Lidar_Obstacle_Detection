@@ -7,8 +7,6 @@
 #include <string>
 #include "kdtree.h"
 #include <ranges>
-#include <unordered_map>
-
 
 // Arguments:
 // window is the region to draw box around
